@@ -439,3 +439,7 @@ dialog::backdrop { background: rgba(6, 5, 4, 0.72); backdrop-filter: blur(4px); 
 .confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; color: var(--muted); font-size: 0.88rem; }
 .btn-danger { background: var(--red); border-color: var(--red); color: #1a0606; }
 .btn-danger:hover:not(:disabled) { background: #ff8585; border-color: #ff8585; }
+
+/* keep home rows inside the page width */
+.personal { grid-template-columns: minmax(0, 1fr); }
+.personal > * { min-width: 0; }
