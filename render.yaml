@@ -1,0 +1,25 @@
+# Render Blueprint: one free web service that serves the API and the built React app.
+# After connecting the repo, set TMDB_API_KEY and ANTHROPIC_API_KEY in the dashboard.
+services:
+  - type: web
+    name: marquee
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TMDB_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # The concierge is the only part that costs money. These caps keep a public demo cheap:
+      # 30 questions a day for the whole site, 8 per visitor per day, 4 per visitor per minute.
+      - key: CONCIERGE_DAILY_LIMIT
+        value: "30"
+      - key: CONCIERGE_PER_VISITOR_DAILY
+        value: "8"
+      - key: CONCIERGE_PER_MINUTE
+        value: "4"

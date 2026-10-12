@@ -1,0 +1,28 @@
+{
+  "name": "marquee",
+  "private": true,
+  "description": "An AI movie concierge: a TMDB MCP server, a Claude agent that uses it, and a React app to browse, track, and ask for movies.",
+  "type": "module",
+  "workspaces": [
+    "packages/tmdb-mcp",
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build -w @marquee/tmdb-mcp && npm run build -w @marquee/api && npm run build -w @marquee/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev": "npm run build -w @marquee/tmdb-mcp && npm run dev -w @marquee/api & npm run dev -w @marquee/web",
+    "start": "npm run start -w @marquee/api",
+    "mcp": "node packages/tmdb-mcp/dist/stdio.js",
+    "eval": "npm run build -w @marquee/tmdb-mcp && npm run eval -w @marquee/api --"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.3"
+  }
+}
