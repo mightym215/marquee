@@ -12,6 +12,20 @@ export const SUGGESTIONS = [
   "A 90s classic I probably missed",
 ];
 
+/** Claude sometimes writes *Title* or **bold**. Show those as real italics and bold instead of raw asterisks. */
+function Formatted({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\s][^*\n]*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (/^\*\*[^*\n]+\*\*$/.test(part)) return <strong key={i}>{part.slice(2, -2)}</strong>;
+        if (/^\*[^*\s][^*\n]*\*$/.test(part)) return <em key={i}>{part.slice(1, -1)}</em>;
+        return part;
+      })}
+    </>
+  );
+}
+
 interface LiveStep {
   id: string;
   tool: string;
@@ -332,7 +346,9 @@ export function Concierge({
             const { result } = t;
             return (
               <div key={t.id} className="bot-turn">
-                <div className="bubble bubble-bot">{result.reply}</div>
+                <div className="bubble bubble-bot">
+                  <Formatted text={result.reply} />
+                </div>
                 {result.picks.length > 0 && (
                   <ul className="picks">
                     {result.picks.map(({ movie, reason }) => (
@@ -348,7 +364,9 @@ export function Concierge({
                             <span className="pick-year">{movie.year}</span>
                           </p>
                           <Rating value={movie.rating} />
-                          <p className="pick-reason">{reason}</p>
+                          <p className="pick-reason">
+                            <Formatted text={reason} />
+                          </p>
                         </div>
                         <ShelfButtons movie={movie} library={library} compact />
                       </li>
