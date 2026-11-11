@@ -209,6 +209,13 @@ export interface CompatStats {
   missingToolCallIds: number;
   /** Tool calls found in content because the server had no parser for them. */
   recoveredToolCalls: number;
+  /**
+   * Content that looked like a tool call but was left as text: a tool name the
+   * request never declared, or a shape that did not match. A distinct failure
+   * from malformed arguments, and worth counting separately — it is the model
+   * inventing a tool rather than fumbling one.
+   */
+  rejectedToolCallJson: number;
 }
 
 export interface OpenAICompatClient extends MessagesClient {
@@ -218,7 +225,14 @@ export interface OpenAICompatClient extends MessagesClient {
 export function createOpenAICompatClient(opts: OpenAICompatOptions): OpenAICompatClient {
   const baseUrl = opts.baseUrl.replace(/\/$/, "");
   const timeoutMs = opts.timeoutMs ?? 300_000;
-  const stats: CompatStats = { requests: 0, malformedToolArgs: 0, missingToolCallIds: 0, recoveredToolCalls: 0 };
+  const stats: CompatStats = {
+    requests: 0,
+    malformedToolArgs: 0,
+    missingToolCallIds: 0,
+    recoveredToolCalls: 0,
+    rejectedToolCallJson: 0,
+  };
+  const debug = Boolean(process.env.COMPAT_DEBUG);
   let generatedId = 0;
 
   return {
@@ -269,6 +283,14 @@ export function createOpenAICompatClient(opts: OpenAICompatOptions): OpenAICompa
         const recovered =
           !apiToolCalls.length && text && declared.size ? recoverNativeToolCalls(text, declared) : undefined;
         if (recovered) stats.recoveredToolCalls += recovered.length;
+
+        // JSON that read like a tool call but did not survive the guards. Kept
+        // apart from a model that simply replied in prose, and printed in full
+        // under COMPAT_DEBUG, since the reason is never obvious from a count.
+        if (!apiToolCalls.length && text && declared.size && !recovered && /^[[{]/.test(stripFence(text))) {
+          stats.rejectedToolCallJson += 1;
+          if (debug) console.error(`[compat] tool-call JSON rejected:\n${text}\n`);
+        }
 
         // Recovered calls were the whole content, so it is not also the reply.
         if (text && !recovered) content.push({ type: "text", text, citations: null } as Anthropic.TextBlock);

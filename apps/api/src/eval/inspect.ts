@@ -83,6 +83,10 @@ if (stats) {
   console.log(`  malformed tool arguments: ${stats.malformedToolArgs}`);
   console.log(`  tool calls missing an id: ${stats.missingToolCallIds}`);
   console.log(`  tool calls recovered from content: ${stats.recoveredToolCalls}`);
+  console.log(`  tool-call JSON rejected (undeclared tool or bad shape): ${stats.rejectedToolCallJson}`);
+  if (stats.rejectedToolCallJson && !process.env.COMPAT_DEBUG) {
+    console.log(`  rerun with COMPAT_DEBUG=1 to print the rejected content`);
+  }
 }
 
 process.exit(0);
