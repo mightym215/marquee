@@ -83,6 +83,14 @@ The concierge is graded, not just demoed. `npm run eval` runs 21 real requests t
 
 The report lands in `apps/api/eval-reports/latest.md` with case pass rate, pick accuracy, grounding rate, average steps, p95 latency, tokens, and estimated cost per request. The scorer and runner have their own tests, which run offline in CI.
 
+### Comparing models
+
+`npm run eval:compare` runs the same cases against two or more models, several trials each, and reports consistency rather than a single score: which cases a model passes every time, which it passes only sometimes, and which check breaks when it fails.
+
+The first run of it points Salesforce's open [xLAM-2](https://github.com/SalesforceAIResearch/xLAM) action model at the suite and compares it to the hosted baseline. Short version: grounding held at 100% and retrieval held, but structured output against a nested schema was the wall, and the only case the 8B passed in all three trials was the one where the correct answer is to return nothing. Two serving bugs had to be found and fixed before the numbers meant anything, one of which made the model look like it scored zero when it had chosen the right tool every time.
+
+**[Full results and limitations](./apps/api/eval-reports/RESULTS.md)** · [raw report](./apps/api/eval-reports/comparison.md) · [how to run it](./apps/api/src/eval/README.md)
+
 ## MCP tools
 
 | Tool | What it does |

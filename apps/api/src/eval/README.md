@@ -5,6 +5,8 @@ Two runners live here.
 - `npm run eval` scores the concierge against every case on one model and writes `eval-reports/latest.md`.
 - `npm run eval:compare` runs the same cases against two or more models, several trials each, and writes `eval-reports/comparison.md`.
 
+Results of the first comparison run, with the limitations that bound them, are in [`eval-reports/RESULTS.md`](../../eval-reports/RESULTS.md).
+
 The comparison exists to measure **consistency**, not just accuracy. A model that passes a case on one attempt and fails it on the next is the interesting result, and a single run hides it. That gap between what a model can do and what it reliably does is what Salesforce AI Research calls jagged intelligence, and it is the thing this harness is pointed at.
 
 Every pick is verified against live TMDB data, so a model cannot pass by sounding confident.
