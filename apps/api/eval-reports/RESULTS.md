@@ -175,8 +175,12 @@ Worth stating plainly, because they bound the claim.
    τ-bench results are for the 70b. This says nothing about that model.
 4. **The passing figures for xLAM rest on very few picks.** Grounding, genre and
    skips-watched at 100% are real but measured over the handful of picks it
-   managed to produce. They are evidence that its picks were not junk, not that
-   it reliably satisfies those constraints.
+   managed to produce: 4 picks for grounding and a single case for genre, against
+   252 and 24 for the baseline. As bare percentages those read as the same claim
+   as the baseline's and they are not. `analyze.py` prints a 95% Wilson interval
+   beside every rate for this reason, and xLAM's genre figure carries an interval
+   of roughly 21% to 100%. They are evidence its picks were not junk, not that it
+   reliably satisfies those constraints.
 
 The obvious next run is the official GGUF through llama.cpp with `--jinja`, which
 removes the first two at once.

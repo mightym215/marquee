@@ -107,6 +107,21 @@ npm run eval:inspect -- --model xlam --case 0
 
 Runs one case and prints every tool call with its real arguments, the picks, and the adapter counters. The comparison tells you a case failed and names the check; this tells you why.
 
+## Analyzing a run
+
+```bash
+python3 apps/api/src/eval/analyze.py apps/api/eval-reports/comparison.json
+python3 apps/api/src/eval/analyze.py run1.json run2.json --plot consistency.png
+```
+
+`comparison.md` says what happened in one run. This answers two things it cannot.
+
+**How much of a gap is real and how much is sample size.** Every rate gets a 95% Wilson score interval. It matters more than it sounds: in the first run xLAM showed 100% on genre and 100% on grounding, the same figures the baseline showed. The baseline's were over 24 and 252 observations. xLAM's were over 1 and 4, with intervals of 21–100% and 51–100%. Rendered as bare percentages those look like the same claim. They are not.
+
+**Whether a case fails the same way every time.** Pass several reports and per case results pool across every trial in every run, so a case that alternates is separated from one that never works. The second is a missing capability; the first is a jagged one, and it is the harder problem.
+
+Standard library only. `--plot` needs matplotlib and is skipped with a note if it is not installed.
+
 ## Adding a model
 
 Add an entry to `BACKENDS` in `models.ts`. Anything that speaks OpenAI chat completions works:
