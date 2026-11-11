@@ -27,11 +27,13 @@ export interface ModelBackend {
 export const BACKENDS: Record<string, ModelBackend> = {
   claude: {
     key: "claude",
-    label: "Claude Sonnet 4.5",
+    // Same rule as the local backend: the report names the model that ran, not
+    // a hardcoded marketing name that drifts from the id underneath it.
+    label: process.env.ANTHROPIC_LABEL ?? process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5-5",
     provider: "anthropic",
     model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5-5",
     price: { input: 3, output: 15 },
-    note: "hosted frontier model",
+    note: process.env.ANTHROPIC_NOTE ?? "hosted frontier model",
   },
   xlam: {
     key: "xlam",
