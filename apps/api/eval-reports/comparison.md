@@ -4,7 +4,7 @@
 
 Every pick is checked against live TMDB data, so a model cannot pass by sounding confident.
 
-| Metric | Claude Sonnet 4.5 | Llama-xLAM-2-8b (q5_K_M) |
+| Metric | claude-sonnet-5-5 | Llama-xLAM-2-8b (q5_K_M) |
 | --- | --- | --- |
 | Cases passed (mean of trials) | 21 / 21 | 2 / 21 |
 | Spread across trials | 21–21 | 1–3 |
@@ -19,7 +19,7 @@ Every pick is checked against live TMDB data, so a model cannot pass by sounding
 
 Pass rate per constraint type, pooled across trials.
 
-| Check | Claude Sonnet 4.5 | Llama-xLAM-2-8b (q5_K_M) |
+| Check | claude-sonnet-5-5 | Llama-xLAM-2-8b (q5_K_M) |
 | --- | --- | --- |
 | declines off topic | 100% | 100% |
 | enough picks | 100% | 6.8% |
@@ -36,7 +36,7 @@ Pass rate per constraint type, pooled across trials.
 
 Trials passed out of 3.
 
-| Case | Claude Sonnet 4.5 | Llama-xLAM-2-8b (q5_K_M) |
+| Case | claude-sonnet-5-5 | Llama-xLAM-2-8b (q5_K_M) |
 | --- | --- | --- |
 | Something like Interstellar, but funny | ✅ 3/3 | ❌ 0/3 enough picks, genre: any of Comedy |
 | A cozy movie under 2 hours | ✅ 3/3 | ⚠️ 2/3 enough picks |
@@ -62,5 +62,5 @@ Trials passed out of 3.
 
 ## Setup
 
-- **Claude Sonnet 4.5** (`claude-sonnet-5-5`) — hosted frontier model
+- **claude-sonnet-5-5** (`claude-sonnet-5-5`) — hosted frontier model
 - **Llama-xLAM-2-8b (q5_K_M)** (`xlam-8b-16k`) — community GGUF via Ollama, Apple M5, 16K ctx — tool calls were not returned in the OpenAI tool_calls field; 110 were recovered from the model's own JSON content across 172 requests
