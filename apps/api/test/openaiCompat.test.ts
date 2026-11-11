@@ -181,6 +181,16 @@ describe("tool calls written into the content", () => {
     expect(client.stats.rejectedToolCallJson).toBe(1);
   });
 
+  it("treats an empty array as a clean end of turn, not a reply and not a rejection", async () => {
+    stubServer(asContent("[]"));
+
+    const res = await call(client, [{ role: "user", content: "hi" }]);
+    expect(res.stop_reason).toBe("end_turn");
+    expect(res.content).toEqual([]);
+    expect(client.stats.rejectedToolCallJson).toBe(0);
+    expect(client.stats.recoveredToolCalls).toBe(0);
+  });
+
   it("does not count ordinary prose as rejected tool-call JSON", async () => {
     stubServer(asContent("You might enjoy The Martian."));
 

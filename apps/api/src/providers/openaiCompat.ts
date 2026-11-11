@@ -187,8 +187,11 @@ function recoverNativeToolCalls(text: string, declared: Set<string>): NativeTool
     return undefined;
   }
 
+  // An empty array is the model saying "no calls", not a malformed one. It is
+  // a clean end of turn, so it is neither recovered nor counted as a rejection,
+  // and it must not reach the user as the reply text.
   const items = Array.isArray(parsed) ? parsed : [parsed];
-  if (!items.length) return undefined;
+  if (!items.length) return [];
 
   const calls: NativeToolCall[] = [];
   for (const item of items) {
