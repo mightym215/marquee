@@ -19,7 +19,8 @@
     "start": "npm run start -w @marquee/api",
     "mcp": "node packages/tmdb-mcp/dist/stdio.js",
     "eval": "npm run build -w @marquee/tmdb-mcp && npm run eval -w @marquee/api --",
-    "eval:compare": "npm run build -w @marquee/tmdb-mcp && npm run eval:compare -w @marquee/api --"
+    "eval:compare": "npm run build -w @marquee/tmdb-mcp && npm run eval:compare -w @marquee/api --",
+    "eval:inspect": "npm run build -w @marquee/tmdb-mcp && npm run eval:inspect -w @marquee/api --"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
