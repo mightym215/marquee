@@ -35,16 +35,19 @@ export const BACKENDS: Record<string, ModelBackend> = {
   },
   xlam: {
     key: "xlam",
-    label: "xLAM-2-3b-fc-r",
+    // The label goes in the report's column header, so it must name the model
+    // that actually ran. Falls back to the model id rather than a hardcoded
+    // size, which would silently mislabel a different checkpoint.
+    label: process.env.XLAM_LABEL ?? process.env.XLAM_MODEL ?? "xLAM-2-3b-fc-r",
     provider: "openai-compat",
     model: process.env.XLAM_MODEL ?? "xlam-2-3b-fc-r",
     baseUrl: process.env.XLAM_BASE_URL ?? "http://localhost:11434/v1",
     price: { input: 0, output: 0 },
-    note: "Salesforce open action model, run locally",
+    note: process.env.XLAM_NOTE ?? "Salesforce open action model, run locally",
   },
   xlam1b: {
     key: "xlam1b",
-    label: "xLAM-2-1b-fc-r",
+    label: process.env.XLAM_1B_LABEL ?? process.env.XLAM_1B_MODEL ?? "xLAM-2-1b-fc-r",
     provider: "openai-compat",
     model: process.env.XLAM_1B_MODEL ?? "xlam-2-1b-fc-r",
     baseUrl: process.env.XLAM_BASE_URL ?? "http://localhost:11434/v1",

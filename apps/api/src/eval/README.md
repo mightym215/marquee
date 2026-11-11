@@ -32,24 +32,40 @@ Salesforce's xLAM models predict tool calls rather than text, which is exactly w
 
 ```bash
 brew install ollama
-ollama serve                                   # leave running
-ollama pull robbiemu/Salesforce_Llama-xLAM-2   # community port
+ollama serve   # leave running in its own tab
+ollama pull robbiemu/Salesforce_Llama-xLAM-2:8b-fc-r-q5_K_M
 ```
 
-Ollama serves an OpenAI-compatible API on `http://localhost:11434/v1`, which is the default this runner expects. Point it at whatever tag you pulled:
+That is a community repackage of `Llama-xLAM-2-8b-fc-r`. There is no `latest` tag, so the quantization has to be named: `8b-fc-r-q3_K_M`, `8b-fc-r-q5_K_M`, `8b-fc-r-q8_0`, or `8b-fc-r-bf16`. q5 needs roughly 6 GB of VRAM.
+
+Ollama serves an OpenAI-compatible API on `http://localhost:11434/v1`, which is the default this runner expects. Name the tag you pulled, and label it so the report says which checkpoint produced the numbers:
 
 ```bash
-XLAM_MODEL=robbiemu/Salesforce_Llama-xLAM-2 npm run eval:compare -- --models claude,xlam --trials 3
+XLAM_MODEL=robbiemu/Salesforce_Llama-xLAM-2:8b-fc-r-q5_K_M \
+XLAM_LABEL="Llama-xLAM-2-8b (q5_K_M)" \
+XLAM_NOTE="community GGUF, Ollama, Apple M5" \
+npm run eval:compare -- --models claude,xlam --trials 3
 ```
+
+`XLAM_LABEL` defaults to the model id, so an unlabeled run is still honest about what ran. It is never silently labeled 3b.
 
 ### llama.cpp (official GGUF weights)
 
-Salesforce publishes GGUF builds at `Salesforce/xLAM-2-3b-fc-r-gguf`. With `llama-server` running:
+Salesforce publishes its own GGUF builds, which ship the chat template the model was trained with. `llama-server` pulls them straight from Hugging Face:
 
 ```bash
-llama-server -m xLAM-2-3b-fc-r-Q4_K_M.gguf --port 8080 --jinja
-XLAM_BASE_URL=http://localhost:8080/v1 npm run eval:compare -- --models xlam --trials 3
+brew install llama.cpp
+llama-server -hf Salesforce/xLAM-2-3b-fc-r-gguf:Q4_K_M --port 8080 --jinja
 ```
+
+```bash
+XLAM_BASE_URL=http://localhost:8080/v1 \
+XLAM_MODEL=xLAM-2-3b-fc-r \
+XLAM_LABEL="xLAM-2-3b-fc-r (Q4_K_M)" \
+npm run eval:compare -- --models xlam --trials 3
+```
+
+`--jinja` is not optional. Without it llama.cpp ignores the model's own template and the model returns tool calls as prose, which the adapter counts as malformed rather than as a tool call. Official sizes: `xLAM-2-1b-fc-r-gguf`, `xLAM-2-3b-fc-r-gguf`, `Llama-xLAM-2-8b-fc-r-gguf`.
 
 ### vLLM (if you have a GPU)
 
@@ -94,6 +110,8 @@ A local model losing on accuracy is not the finding. *Where* it loses is.
 | `TMDB_API_KEY` | Required. Verifies every pick |
 | `ANTHROPIC_API_KEY` | Required for the `claude` backend |
 | `XLAM_BASE_URL` | Local server, default `http://localhost:11434/v1` |
-| `XLAM_MODEL` | Model id or Ollama tag |
+| `XLAM_MODEL` | Model id or Ollama tag, including the quantization |
+| `XLAM_LABEL` | Column header in the report. Defaults to `XLAM_MODEL` |
+| `XLAM_NOTE` | Printed under Setup, for the hardware and quantization |
 | `EVAL_TIMEOUT_MS` | Per request, default 300000. Small models on CPU are slow |
 | `EVAL_CONCURRENCY` | Defaults to 2 for hosted, 1 for local |
