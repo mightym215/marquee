@@ -93,6 +93,37 @@ Three measurement bugs had to be found before any of those numbers meant anythin
 
 **[Full results and limitations](./apps/api/eval-reports/RESULTS.md)** · [raw report](./apps/api/eval-reports/comparison.md) · [how to run it](./apps/api/src/eval/README.md)
 
+### Running the agent on another model
+
+The agent never constructs an Anthropic client. It takes one in, typed as the only method it actually calls:
+
+```ts
+export interface MessagesClient {
+  messages: {
+    create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message>;
+  };
+}
+```
+
+Anything that satisfies that can drive the concierge, so the comparison runs **the real agent loop and the real MCP tools** against every model rather than a simplified reimplementation of them. A benchmark that re-creates the agent in order to test it is measuring the re-creation.
+
+`providers/openaiCompat.ts` implements that interface against any OpenAI-compatible endpoint (Ollama, vLLM, llama.cpp server). It translates in both directions:
+
+| Anthropic shape | OpenAI shape |
+| --- | --- |
+| `system` as a top level parameter | first message, `role: "system"` |
+| `tools[].input_schema` | `tools[].function.parameters` |
+| `tool_use` content block | `tool_calls[]` on the assistant message |
+| `tool_result` blocks inside one user message | one message each, `role: "tool"` |
+| `stop_reason: "tool_use"` | `finish_reason: "tool_calls"` |
+| `usage.input_tokens` | `usage.prompt_tokens` |
+
+**It is deliberately tolerant, and counts instead of crashing.** A small model that emits arguments which are not valid JSON gets an empty object, so the agent's own validation rejects the call and hands the model an error it can act on. That is the behavior worth measuring. A tool call with no id gets one invented, so the transcript stays well formed and tool results can still be matched. Both are counted.
+
+**It also recovers tool calls the server failed to parse.** Some models, xLAM included, return tool calls as their own JSON in the message content rather than in `tool_calls`. Lifting those out is the serving stack's job (vLLM's `--tool-call-parser xlam`, llama.cpp's `--jinja`), and a runtime without a parser for that model silently turns correct tool calls into prose. The adapter recovers them, but only when the server returned no tool calls of its own, the whole content parses as JSON, and **every** entry names a tool the request actually declared, so it can never invent a call the model did not make. Recoveries are counted and written into the report, because needing one is a fact about the serving stack that changes how the numbers should be read.
+
+Adding a model is one entry in `BACKENDS` in [`models.ts`](./apps/api/src/eval/models.ts).
+
 ## MCP tools
 
 | Tool | What it does |
