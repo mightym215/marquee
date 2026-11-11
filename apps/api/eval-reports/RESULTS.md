@@ -12,6 +12,13 @@ open action model stop working, and is that edge sharp or ragged?** Each model
 ran all 21 cases three times, because a model that passes a case once and fails
 it the next time is the interesting result and a single run hides it.
 
+> **Read [Serving is most of the story](#serving-is-most-of-the-story) before the
+> scores.** Three separate serving configurations were tried. Two of the three
+> destroyed the model's tool calls before the agent ever saw them, in opposite
+> ways, and under its own chat template the model emits correct tool calls that
+> the runtime then discards. The pass rates below are real, and they are bounded
+> by that.
+
 ## What ran
 
 | | |
@@ -115,6 +122,73 @@ that is missing, because the failure does not announce itself. That gap between
 what a model can do and what it reliably does is what Salesforce AI Research
 calls jagged intelligence, and it is what this harness is pointed at.
 
+## Serving is most of the story
+
+Three serving configurations were tried. The model is the same in all three.
+
+| Setup | Result |
+| --- | --- |
+| Community GGUF, Ollama, no tool-call parser | Tool calls arrive as prose. Silent. Looks like 0% capability |
+| Official GGUF, llama.cpp 0.9.0, `--jinja` | Correct tool calls rejected by the grammar. **59 of 63 requests return HTTP 500** |
+| Community GGUF, Ollama, adapter recovers calls from content | Runs. This produced the numbers above |
+
+**Ollama ships no parser for this model's output format.** It renders the tool
+definitions into the prompt but logs `parser=""`, so the model's tool calls come
+back in the message content and any OpenAI-compatible client sees none. Nothing
+errors. The agent simply stops at step one.
+
+**llama.cpp has a parser and it is too strict.** With `--jinja` the model's own
+chat template is applied, which is what we wanted, and generation runs normally.
+Then the grammar rejects the result and the whole turn 500s:
+
+```
+common_chat_peg_parse: unparsed peg-native output:
+  {"name": "search_movies", "arguments": {"query": "Korean thriller"}}]
+srv operator(): got exception: {"error":{"code":500,
+  "message":"The model produced output that does not match the expected peg-native format"}}
+```
+
+Note the trailing `]` with no opening bracket. xLAM emits an **array** of calls.
+The grammar expects a bare object, parses the object, and fails on the closing
+bracket. Of 63 agent turns, 59 returned 500. The 4 that did not were the off
+topic case, where the correct answer is prose and no tool call is produced, so
+the parser never engages.
+
+This is a known llama.cpp problem rather than an xLAM one: the same error is
+open against Gemma 4, Qwen3.5 and gpt-oss, and a Docker Model Runner maintainer
+attributes it to an upstream grammar that accepts only one tool call per turn.
+
+**What that run does tell us is the most useful thing in this document.** Under
+its own chat template, the calls the model produced before being rejected are
+correct:
+
+```json
+{"name": "discover_movies", "arguments": {"genres": ["Horror"], "year_from": 2010, "year_to": 2019}}
+{"name": "search_movies",   "arguments": {"query": "war", "max_runtime_minutes": 150}}
+{"name": "search_movies",   "arguments": {"query": "romantic comedy", "year": 2000}}
+{"name": "get_recommendations", "arguments": {"movie_id": 550}}
+```
+
+"A horror movie from the 2010s" became the right tool with the right genre and
+the right year range. "A war movie under two and a half hours" became a search
+carrying a runtime limit. That is correct tool selection and correct parameter
+construction, thrown away by the serving layer.
+
+Two real model errors are visible in the same logs and are worth keeping in
+view. It emitted `{"name": "list_genres", "arguments": {}}`, which is not one of
+the declared tools, and it reached for `movie_id: 550` for "Something like
+Parasite", which is Fight Club's TMDB id and came from memory rather than from
+any tool result. The grounding check exists for exactly that.
+
+**What this does and does not settle.** It settles that the model's tool call
+emission is well formed under its own template, so the scores above are not
+explained by it being unable to call tools. It does not settle the
+`present_picks` failure, because every llama.cpp turn died at step one and the
+run never reached the final structured output step under the model's own
+template. That question is still open, and it needs a runtime that can parse
+this model: vLLM with `--tool-call-parser xlam`, or llama.cpp once the grammar
+accepts an array.
+
 ## Three things that had to be fixed before any number meant anything
 
 Each one produced a confident, publishable, wrong result first.
@@ -163,14 +237,19 @@ failing model had perfect constraint scores.
 
 Worth stating plainly, because they bound the claim.
 
-1. **The system prompt was written for Claude.** xLAM-2 was trained with its own
-   tool-calling prompt format, and this harness gives both models the same
-   Claude-shaped prompt. Running Salesforce's official GGUF under
-   `llama-server --jinja` would apply the model's own template and is the honest
-   test of whether the schema failures survive. Until that runs, the claim is
-   "under a shared harness," not "xLAM cannot do nested schemas."
-2. **This is a community q5_K_M quantization**, not Salesforce's official
-   weights. Quantization can cost structured-output precision specifically.
+1. **The scored run used a Claude-shaped system prompt.** xLAM-2 was trained with
+   its own tool-calling prompt format, and the harness gives both models the same
+   prompt. The attempt to remove this, Salesforce's official GGUF under
+   `llama-server --jinja`, could not complete because the runtime 500s on the
+   model's output. What came back from it is still informative: under its own
+   template the model's tool calls are well formed, so the scores are not
+   explained by prompt format at the tool-call level. Whether the
+   `present_picks` schema failures survive a correct template is untested,
+   because no turn got that far. The claim remains "under a shared harness."
+2. **The scored run used a community q5_K_M quantization**, not Salesforce's
+   official weights. The official Q5_K_M was obtained and loaded, but the
+   llama.cpp parser prevented a scored run. Quantization can cost
+   structured-output precision specifically, so this is untested.
 3. **8B against a frontier model is not size matched.** Salesforce's published
    τ-bench results are for the 70b. This says nothing about that model.
 4. **The passing figures for xLAM rest on very few picks.** Grounding, genre and
@@ -182,8 +261,9 @@ Worth stating plainly, because they bound the claim.
    of roughly 21% to 100%. They are evidence its picks were not junk, not that it
    reliably satisfies those constraints.
 
-The obvious next run is the official GGUF through llama.cpp with `--jinja`, which
-removes the first two at once.
+Removing the first two needs a runtime that can read this model's output.
+vLLM with `--tool-call-parser xlam` is the documented path and needs a GPU.
+llama.cpp would work once its grammar accepts an array of calls.
 
 ## What was deliberately not done
 
