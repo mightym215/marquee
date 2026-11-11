@@ -87,7 +87,9 @@ The report lands in `apps/api/eval-reports/latest.md` with case pass rate, pick 
 
 `npm run eval:compare` runs the same cases against two or more models, several trials each, and reports consistency rather than a single score: which cases a model passes every time, which it passes only sometimes, and which check breaks when it fails.
 
-The first run of it points Salesforce's open [xLAM-2](https://github.com/SalesforceAIResearch/xLAM) action model at the suite and compares it to the hosted baseline. Short version: grounding held at 100% and retrieval held, but structured output against a nested schema was the wall, and the only case the 8B passed in all three trials was the one where the correct answer is to return nothing. Two serving bugs had to be found and fixed before the numbers meant anything, one of which made the model look like it scored zero when it had chosen the right tool every time.
+The first run of it points Salesforce's open [xLAM-2](https://github.com/SalesforceAIResearch/xLAM) action model at the suite and compares it to the hosted baseline. Short version: tool selection, multi-step state and grounding all held, but the 8B cleared the minimum pick count once in 60 attempts, and the only case it passed in every trial was the one where the correct answer is to return nothing. Structured output against a nested schema is the wall, and it is intermittent rather than absent, which is the harder kind.
+
+Three measurement bugs had to be found before any of those numbers meant anything: a context default that ran the model two thirds on CPU, a missing tool-call parser that made a model choosing correctly look like it scored zero, and a scorer that credited constraints it never checked. All three are written up with the fixes.
 
 **[Full results and limitations](./apps/api/eval-reports/RESULTS.md)** · [raw report](./apps/api/eval-reports/comparison.md) · [how to run it](./apps/api/src/eval/README.md)
 
