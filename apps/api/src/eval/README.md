@@ -36,16 +36,24 @@ ollama serve   # leave running in its own tab
 ollama pull robbiemu/Salesforce_Llama-xLAM-2:8b-fc-r-q5_K_M
 ```
 
-That is a community repackage of `Llama-xLAM-2-8b-fc-r`. There is no `latest` tag, so the quantization has to be named: `8b-fc-r-q3_K_M`, `8b-fc-r-q5_K_M`, `8b-fc-r-q8_0`, or `8b-fc-r-bf16`. q5 needs roughly 6 GB of VRAM.
+That is a community repackage of `Llama-xLAM-2-8b-fc-r`. There is no `latest` tag, so the quantization has to be named: `8b-fc-r-q3_K_M`, `8b-fc-r-q5_K_M`, `8b-fc-r-q8_0`, or `8b-fc-r-bf16`. q5 is 5.3 GB of weights.
 
-Ollama serves an OpenAI-compatible API on `http://localhost:11434/v1`, which is the default this runner expects. Name the tag you pulled, and label it so the report says which checkpoint produced the numbers:
+**Build the derived tag before running it.** The upstream tag pins `num_ctx` to the model's full 131072 train context, and `OLLAMA_CONTEXT_LENGTH` does not override it. On a 12 GB GPU that reserves an 8.7 GB KV cache, pushes a third of the layers onto the CPU, and drops generation to **0.56 tok/s**, which measures the spill rather than the model:
 
 ```bash
-XLAM_MODEL=robbiemu/Salesforce_Llama-xLAM-2:8b-fc-r-q5_K_M \
+ollama create xlam-8b-16k -f apps/api/src/eval/xlam-8b.Modelfile
+```
+
+Ollama serves an OpenAI-compatible API on `http://localhost:11434/v1`, which is the default this runner expects. Name the tag, and label it so the report says which checkpoint produced the numbers:
+
+```bash
+XLAM_MODEL=xlam-8b-16k \
 XLAM_LABEL="Llama-xLAM-2-8b (q5_K_M)" \
-XLAM_NOTE="community GGUF, Ollama, Apple M5" \
+XLAM_NOTE="community GGUF, Ollama, Apple M5, 16K ctx, all layers on GPU" \
 npm run eval:compare -- --models claude,xlam --trials 3
 ```
+
+Confirm the fix in the `ollama serve` log before trusting any timing number. `offloaded 33/33 layers to GPU` is what you want; anything less and the latency column is measuring memory pressure.
 
 `XLAM_LABEL` defaults to the model id, so an unlabeled run is still honest about what ran. It is never silently labeled 3b.
 

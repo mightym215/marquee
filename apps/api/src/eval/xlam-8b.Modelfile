@@ -1,0 +1,23 @@
+# Derived build of the community xLAM-2 8B port, with a context small enough
+# that the whole model stays on the GPU.
+#
+# The upstream tag pins num_ctx to the model's full 131072 train context, and
+# OLLAMA_CONTEXT_LENGTH does not override it. On a 12 GB Apple GPU that
+# allocates an 8.7 GB KV cache, which leaves no room for the 5.3 GB of weights,
+# so llama.cpp offloads only 24 of 33 layers and the rest run on CPU. Measured
+# cost of that: 0.56 tok/s. Nothing about the model is being measured at that
+# point, only the spill.
+#
+# 16384 is about 1.1 GB of KV at q8_0, so weights, cache and compute buffer all
+# fit and every layer stays on the GPU. The longest observed eval prompt is
+# ~1.5k tokens, so this clips nothing.
+#
+# Sampling params (temp, top_p) are inherited from the parent on purpose. The
+# comparison measures the model as a user gets it, and the run-to-run variance
+# those settings produce is the thing being measured.
+#
+#   ollama create xlam-8b-16k -f apps/api/src/eval/xlam-8b.Modelfile
+
+FROM robbiemu/Salesforce_Llama-xLAM-2:8b-fc-r-q5_K_M
+
+PARAMETER num_ctx 16384
