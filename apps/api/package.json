@@ -10,7 +10,8 @@
     "test": "vitest run",
     "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
     "start": "node --env-file-if-exists=../../.env dist/index.js",
-    "eval": "tsx --env-file-if-exists=../../.env src/eval/run.ts"
+    "eval": "tsx --env-file-if-exists=../../.env src/eval/run.ts",
+    "eval:compare": "tsx --env-file-if-exists=../../.env src/eval/runCompare.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
