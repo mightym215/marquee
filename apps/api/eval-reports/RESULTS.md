@@ -46,7 +46,9 @@ is misleading about what the model can do.
 **Grounding held at 100%.** Every pick xLAM produced resolved to a movie id that
 came out of a real tool result. It never invented a film. The eval looks up any
 id the agent did not see in a tool result rather than trusting it, and nothing
-needed looking up. Whatever is failing, it is not hallucination.
+needed looking up. Whatever is failing, it is not hallucination. This is
+measured over the picks it actually produced, which on this run was a small
+number.
 
 **Retrieval and tool selection held.** A single case traced step by step:
 
@@ -92,6 +94,27 @@ itself.
 So the shape of the edge, on this harness: **retrieval and grounding are solid,
 multi-step state carries, and structured output against a nested schema is the
 wall.**
+
+## A measurement bug in this run's per constraint table
+
+`comparison.md` has a "Where each model breaks" table giving xLAM 100% on
+language, rating, runtime, years and skips watched, and 97.7% on genre. **Those
+figures are inflated and should not be read as the model satisfying those
+constraints.**
+
+Each per pick constraint was scored `hits === total` over the picks produced.
+With no picks that is `0 === 0`, so every constraint passed for free on exactly
+the cases the agent failed hardest. Since xLAM produced no picks on most cases,
+most of those passes were vacuous.
+
+The scorer now omits a constraint it had no picks to evaluate, so pooled rates
+count only checks that actually ran. Case verdicts are unaffected, because a
+case with no picks already fails on `enough picks`, so the headline table above
+and the case by case results stand. The per constraint table in this run's
+`comparison.md` predates the fix.
+
+The two figures in it that were never vacuous are `enough picks` at **6.8%** and
+grounding, which is computed over real picks rather than by that comparison.
 
 ## Two things that had to be fixed before any number meant anything
 
@@ -144,6 +167,9 @@ Worth stating plainly, because they bound the claim.
    τ-bench results are for the 70b. This says nothing about that model.
 4. **One trial hit a timeout** on "A French romance" and is counted as an error,
    not a failure.
+5. **The per constraint table in this run's `comparison.md` was produced by the
+   old scorer** and overstates xLAM on every constraint except `enough picks`.
+   See the section above. Rerunning regenerates it correctly.
 
 The obvious next run is the official GGUF through llama.cpp with `--jinja`, which
 removes limitations 1 and 2 at once.

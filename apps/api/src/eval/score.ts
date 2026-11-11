@@ -49,6 +49,14 @@ export function scoreCase(c: EvalCase, result: ConciergeResult, details: Map<num
         failedPickIds.add(p.movie.id);
       }
     }
+    // A constraint with nothing to check is not a constraint that was met.
+    // `hits === total` is 0 === 0 when the agent produced no picks, so every
+    // per pick check used to pass for free on exactly the cases the agent
+    // failed hardest. That inflated the per constraint pass rates for a weak
+    // model into near perfect scores. An unevaluated check is now simply
+    // absent, so the pooled rates only count checks that ran. The case verdict
+    // is unaffected: a case with no picks already fails on "enough picks".
+    if (total === 0) return;
     checks.push({
       name,
       pass: hits === total,

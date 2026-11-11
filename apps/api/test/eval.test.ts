@@ -40,6 +40,29 @@ describe("eval scoring", () => {
     expect(score.accuratePicks).toBe(2);
   });
 
+  it("does not credit a constraint it could not check", async () => {
+    // The failure that matters: an agent that produces nothing used to score a
+    // free pass on every per pick constraint, because hits === total is
+    // 0 === 0. A weak model then looked like it satisfied every genre, year
+    // and runtime rule on exactly the cases it failed hardest.
+    const c: EvalCase = {
+      id: "korean-thrillers",
+      prompt: "The best Korean thrillers",
+      expect: { language: "ko", genresAny: ["Thriller"], minRating: 7, maxRuntime: 150, yearFrom: 2000 },
+    };
+    const score = scoreCase(c, await result([]), new Map());
+
+    expect(score.checks.map((x) => x.name)).toEqual(["enough picks", "grounded"]);
+    expect(score.checks.some((x) => x.name.startsWith("genre"))).toBe(false);
+    expect(score.pass).toBe(false);
+  });
+
+  it("still reports a constraint when there are picks to check it against", async () => {
+    const c: EvalCase = { id: "cozy", prompt: "A cozy movie under 2 hours", expect: { maxRuntime: 120 } };
+    const score = scoreCase(c, await result([{ id: 926 }]), await detailsFor(926));
+    expect(score.checks.find((x) => x.name.startsWith("runtime"))).toMatchObject({ pass: true, hits: 1, total: 1 });
+  });
+
   it("fails grounding for picks named from memory or invalid ids", async () => {
     const c: EvalCase = { id: "x", prompt: "x", expect: {} };
     const score = scoreCase(c, await result([{ id: 926 }, { id: 129, grounded: false }, { id: 346648 }], 1), await detailsFor(926, 129, 346648));
