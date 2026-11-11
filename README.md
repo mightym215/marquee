@@ -131,7 +131,7 @@ npm start              # http://localhost:8787
 
 - **No keys yet?** `MARQUEE_DEMO=1 npm start` runs the whole app on sample data, including sample Letterboxd diaries for any username.
 - **Live reload:** `npm run dev`, then open http://localhost:5173.
-- **Tests:** `npm test`. 55 tests cover the TMDB client, the Letterboxd parser, Blend, every MCP tool over a real MCP connection, the agent loop and streaming, the API, the rate limiter, and the eval scorer. They run on sample data with no keys or network.
+- **Tests:** `npm test`. 79 tests cover the TMDB client, the Letterboxd parser, Blend, every MCP tool over a real MCP connection, the agent loop and streaming, the API, the rate limiter, the eval scorer, and the OpenAI-compatible adapter. They run on sample data with no keys or network.
 - **Eval:** `npm run eval` (needs both keys), or `npm run eval -- 5` for a quick 5 case run.
 
 ## Use the MCP server in Claude Desktop
