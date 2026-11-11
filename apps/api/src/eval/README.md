@@ -23,6 +23,7 @@ npm run eval:compare -- --models xlam --trials 1 --cases 5   # quick smoke test
 | `--models` | `claude,xlam` | Comma-separated keys from `models.ts` |
 | `--trials` | `3` | Runs per model. Use 1 while debugging, 3+ for real numbers |
 | `--cases` | all | First N cases only |
+| `--out` | `comparison` | Report name, so two serving setups don't overwrite each other |
 
 `TMDB_API_KEY` is always required. Claude needs `ANTHROPIC_API_KEY`. Local models need a server already running.
 

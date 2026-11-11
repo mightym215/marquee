@@ -34,6 +34,9 @@ const modelKeys = arg("models", "claude,xlam").split(",").map((s) => s.trim()).f
 const trials = Math.max(1, Number(arg("trials", "3")));
 const caseLimit = Number(arg("cases", String(CASES.length))) || CASES.length;
 const cases = CASES.slice(0, caseLimit);
+// Comparing two serving setups of the same model means two reports, not one
+// overwriting the other. Slashes are stripped so --out can't escape the folder.
+const outName = arg("out", "comparison").replace(/[/\\]/g, "-").replace(/\.(md|json)$/, "");
 
 const backends = modelKeys.map(resolveBackend);
 const tmdb = createTmdbClient({ apiKey: tmdbKey, region: process.env.TMDB_REGION ?? "US" });
@@ -107,9 +110,9 @@ if (!comparisons.length) {
 const markdown = comparisonMarkdown(comparisons);
 const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../eval-reports");
 await mkdir(dir, { recursive: true });
-await writeFile(path.join(dir, "comparison.md"), markdown);
-await writeFile(path.join(dir, "comparison.json"), JSON.stringify(comparisons, null, 2));
+await writeFile(path.join(dir, `${outName}.md`), markdown);
+await writeFile(path.join(dir, `${outName}.json`), JSON.stringify(comparisons, null, 2));
 
 console.log("\n" + comparisonMarkdown(comparisons).split("## Where each model breaks")[0]);
-console.log("Full report: apps/api/eval-reports/comparison.md");
+console.log(`Full report: apps/api/eval-reports/${outName}.md`);
 process.exit(0);
