@@ -77,7 +77,26 @@ for (const backend of backends) {
     console.log(`  → ${report.summary.casesPassed}/${report.summary.cases}\n`);
   }
 
-  if (reports.length) comparisons.push(summarizeTrials(backend, reports));
+  if (!reports.length) continue;
+
+  // If the server had no parser for this model's tool calls, the adapter
+  // recovered them from the content. That changes how the numbers should be
+  // read, so it goes in the report rather than staying in the console.
+  const stats = (client as { stats?: { requests: number; recoveredToolCalls: number; malformedToolArgs: number } }).stats;
+  const annotated =
+    stats && stats.recoveredToolCalls > 0
+      ? {
+          ...backend,
+          note: [
+            backend.note,
+            `tool calls were not returned in the OpenAI tool_calls field; ${stats.recoveredToolCalls} were recovered from the model's own JSON content across ${stats.requests} requests`,
+          ]
+            .filter(Boolean)
+            .join(" — "),
+        }
+      : backend;
+
+  comparisons.push(summarizeTrials(annotated, reports));
 }
 
 if (!comparisons.length) {

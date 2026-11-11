@@ -83,6 +83,28 @@ vllm serve Salesforce/xLAM-2-3b-fc-r --enable-auto-tool-choice --tool-call-parse
 XLAM_BASE_URL=http://localhost:8000/v1 npm run eval:compare -- --models claude,xlam
 ```
 
+## When a server has no parser for the model's tool calls
+
+xLAM returns tool calls as its own JSON in the message content:
+
+```json
+[{"name": "search_movies", "arguments": {"query": "Interstellar"}}]
+```
+
+Lifting that into OpenAI's `tool_calls` field is the serving stack's job. vLLM does it with `--tool-call-parser xlam`, llama.cpp with `--jinja`. Ollama renders your tools into the prompt but ships no xLAM parser, so the call arrives as prose, the agent sees no tool call, and every case fails at the first step with zero picks. That result says nothing about the model.
+
+The adapter recovers those calls so the comparison measures the model's decision rather than the server's missing parser. It only does so when the server returned no tool calls of its own, the whole content parses as JSON, and **every** entry names a tool the request actually declared. Anything else stays text, so a recovery can never invent a call the model did not make.
+
+Recoveries are counted and written into the report's Setup section, because needing one is a finding about the serving stack and changes how the numbers should be read. `npm run eval:inspect` prints the count for a single case.
+
+## Diagnosing one case
+
+```bash
+npm run eval:inspect -- --model xlam --case 0
+```
+
+Runs one case and prints every tool call with its real arguments, the picks, and the adapter counters. The comparison tells you a case failed and names the check; this tells you why.
+
 ## Adding a model
 
 Add an entry to `BACKENDS` in `models.ts`. Anything that speaks OpenAI chat completions works:

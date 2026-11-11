@@ -133,3 +133,98 @@ describe("openai-compatible adapter", () => {
     await expect(call(client, [{ role: "user", content: "hi" }])).rejects.toThrow(/returned 404/);
   });
 });
+
+/**
+ * Ollama renders tools into the prompt but ships no xLAM response parser, so
+ * the model's tool call comes back as content. Recovering it measures the
+ * model's decision instead of the server's missing parser — but only when the
+ * content really is a call to a tool this request declared.
+ */
+describe("tool calls written into the content", () => {
+  let client: ReturnType<typeof createOpenAICompatClient>;
+
+  beforeEach(() => {
+    client = createOpenAICompatClient({ baseUrl: "http://localhost:11434/v1", apiKey: "local" });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** What xLAM-2 actually returned through Ollama. */
+  const asContent = (content: string) => ({
+    choices: [{ message: { content }, finish_reason: "stop" }],
+    usage: {},
+  });
+
+  it("recovers xLAM's native format and reports it as a tool call", async () => {
+    stubServer(asContent('[{"name": "search_movies", "arguments": {"query": "Interstellar"}}]'));
+
+    const res = await call(client, [{ role: "user", content: "Something like Interstellar, but funny" }]);
+    expect(res.stop_reason).toBe("tool_use");
+    expect(res.content).toHaveLength(1);
+    expect(res.content[0]).toMatchObject({ type: "tool_use", name: "search_movies", input: { query: "Interstellar" } });
+    expect(client.stats.recoveredToolCalls).toBe(1);
+  });
+
+  it("accepts a bare object, a markdown fence, and arguments as a JSON string", async () => {
+    stubServer(asContent('```json\n{"name": "search_movies", "arguments": "{\\"query\\":\\"cozy\\"}"}\n```'));
+
+    const res = await call(client, [{ role: "user", content: "a cozy movie" }]);
+    expect(res.content[0]).toMatchObject({ type: "tool_use", name: "search_movies", input: { query: "cozy" } });
+  });
+
+  it("will not invent a tool the request never declared", async () => {
+    stubServer(asContent('[{"name": "delete_everything", "arguments": {}}]'));
+
+    const res = await call(client, [{ role: "user", content: "hi" }]);
+    expect(res.stop_reason).toBe("end_turn");
+    expect(res.content[0]!.type).toBe("text");
+    expect(client.stats.recoveredToolCalls).toBe(0);
+  });
+
+  it("leaves a JSON reply that is not a tool call as text", async () => {
+    stubServer(asContent('{"title": "Interstellar", "year": 2014}'));
+
+    const res = await call(client, [{ role: "user", content: "hi" }]);
+    expect(res.stop_reason).toBe("end_turn");
+    expect(res.content[0]).toMatchObject({ type: "text" });
+    expect(client.stats.recoveredToolCalls).toBe(0);
+  });
+
+  it("rejects the whole batch if any entry names an undeclared tool", async () => {
+    stubServer(
+      asContent('[{"name": "search_movies", "arguments": {"query": "cozy"}}, {"name": "rm_rf", "arguments": {}}]'),
+    );
+
+    const res = await call(client, [{ role: "user", content: "hi" }]);
+    expect(res.content.every((b) => b.type === "text")).toBe(true);
+    expect(client.stats.recoveredToolCalls).toBe(0);
+  });
+
+  it("never looks in the content when the server returned real tool calls", async () => {
+    stubServer({
+      choices: [
+        {
+          message: {
+            content: '[{"name": "search_movies", "arguments": {"query": "ignored"}}]',
+            tool_calls: [{ id: "c1", function: { name: "search_movies", arguments: '{"query":"real"}' } }],
+          },
+          finish_reason: "tool_calls",
+        },
+      ],
+      usage: {},
+    });
+
+    const res = await call(client, [{ role: "user", content: "hi" }]);
+    const uses = res.content.filter((b) => b.type === "tool_use");
+    expect(uses).toHaveLength(1);
+    expect(uses[0]).toMatchObject({ input: { query: "real" } });
+    expect(client.stats.recoveredToolCalls).toBe(0);
+  });
+
+  it("leaves plain prose alone", async () => {
+    stubServer(asContent("You might enjoy The Martian."));
+
+    const res = await call(client, [{ role: "user", content: "hi" }]);
+    expect(res.stop_reason).toBe("end_turn");
+    expect(res.content[0]).toMatchObject({ type: "text", text: "You might enjoy The Martian." });
+  });
+});

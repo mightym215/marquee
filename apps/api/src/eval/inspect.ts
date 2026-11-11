@@ -82,6 +82,7 @@ if (stats) {
   console.log(`  requests: ${stats.requests}`);
   console.log(`  malformed tool arguments: ${stats.malformedToolArgs}`);
   console.log(`  tool calls missing an id: ${stats.missingToolCallIds}`);
+  console.log(`  tool calls recovered from content: ${stats.recoveredToolCalls}`);
 }
 
 process.exit(0);
