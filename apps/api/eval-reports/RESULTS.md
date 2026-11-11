@@ -45,9 +45,14 @@ rather than prose. It is the natural thing to point this harness at.
 | Cost per request | $0.0622 | $0 |
 | Errors | 0 | 0 |
 
-The baseline passing 21/21 three times with no spread is what makes the rest
-readable. It is a flat control, so any variance below belongs to the model under
-test rather than to the harness.
+The baseline passing 21/21 in all three trials is what makes the rest readable.
+A near flat control means the variance below belongs to the model under test
+rather than to the harness.
+
+It is near flat rather than perfectly flat. Across nine baseline trials run that
+day, eight scored 21/21 and one scored 20/21, so 188 of 189 case runs passed.
+The baseline has a little variance of its own, and a reading of these numbers
+that treats it as a fixed ceiling is slightly too generous to it.
 
 ## The finding
 
