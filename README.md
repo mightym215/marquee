@@ -89,7 +89,7 @@ The report lands in `apps/api/eval-reports/latest.md` with case pass rate, pick 
 
 The first run of it points Salesforce's open [xLAM-2](https://github.com/SalesforceAIResearch/xLAM) action model at the suite and compares it to the hosted baseline. Short version: tool selection, multi-step state and grounding all held, but the 8B cleared the minimum pick count once in 60 attempts, and the only case it passed in every trial was the one where the correct answer is to return nothing. Structured output against a nested schema is the wall, and it is intermittent rather than absent, which is the harder kind.
 
-Three measurement bugs had to be found before any of those numbers meant anything: a context default that ran the model two thirds on CPU, a missing tool-call parser that made a model choosing correctly look like it scored zero, and a scorer that credited constraints it never checked. All three are written up with the fixes.
+Getting to a number that meant anything took more work than producing one. A context default ran the model two thirds on CPU at 0.56 tok/s. A scorer credited constraints it never evaluated. And **two of the three serving setups tried destroy this model's tool calls before the agent sees them, in opposite ways**: Ollama ships no parser for its output format so correct calls arrive silently as prose, and llama.cpp's grammar rejects them outright, 500ing 59 of 63 agent turns over a trailing bracket. Under its own chat template the model emits correct tool calls that the runtime then throws away. All of it is written up with the evidence.
 
 **[Full results and limitations](./apps/api/eval-reports/RESULTS.md)** · [raw report](./apps/api/eval-reports/comparison.md) · [how to run it](./apps/api/src/eval/README.md)
 
