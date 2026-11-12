@@ -1,6 +1,7 @@
 {
   "name": "marquee",
   "private": true,
+  "license": "MIT",
   "description": "An AI movie concierge: a TMDB MCP server, a Claude agent that uses it, and a React app to browse, track, and ask for movies.",
   "type": "module",
   "workspaces": [
