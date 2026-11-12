@@ -262,13 +262,15 @@ Worth stating plainly, because they bound the claim.
 3. **8B against a frontier model is not size matched.** Salesforce's published
    τ-bench results are for the 70b. This says nothing about that model.
 4. **The passing figures for xLAM rest on very few picks.** Grounding, genre and
-   skips-watched at 100% are real but measured over the handful of picks it
-   managed to produce: 4 picks for grounding and a single case for genre, against
-   252 and 24 for the baseline. As bare percentages those read as the same claim
-   as the baseline's and they are not. `analyze.py` prints a 95% Wilson interval
-   beside every rate for this reason, and xLAM's genre figure carries an interval
-   of roughly 21% to 100%. They are evidence its picks were not junk, not that it
-   reliably satisfies those constraints.
+   skips-watched read 100%, the same as the baseline, but they are not the same
+   claim. `enough picks` passed 1.7% of the time, so the agent produced a usable
+   set of picks on roughly one case run in sixty, and every other rate is pooled
+   over whatever small number of picks the remaining runs produced. The
+   baseline's 100% is over the full 63 runs. A bare percentage hides that
+   difference completely, which is why `analyze.py` prints a 95% Wilson interval
+   and the sample size beside every rate. Run it against `comparison.json` for
+   the exact counts. These figures are evidence that xLAM's picks were not junk,
+   not that it reliably satisfies those constraints.
 
 Removing the first two needs a runtime that can read this model's output.
 vLLM with `--tool-call-parser xlam` is the documented path and needs a GPU.

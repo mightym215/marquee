@@ -116,7 +116,7 @@ python3 apps/api/src/eval/analyze.py run1.json run2.json --plot consistency.png
 
 `comparison.md` says what happened in one run. This answers two things it cannot.
 
-**How much of a gap is real and how much is sample size.** Every rate gets a 95% Wilson score interval. It matters more than it sounds: in the first run xLAM showed 100% on genre and 100% on grounding, the same figures the baseline showed. The baseline's were over 24 and 252 observations. xLAM's were over 1 and 4, with intervals of 21–100% and 51–100%. Rendered as bare percentages those look like the same claim. They are not.
+**How much of a gap is real and how much is sample size.** Every rate gets a 95% Wilson score interval and its sample size. It matters more than it sounds: in the first run xLAM showed 100% on genre and 100% on grounding, the same figures the baseline showed. The baseline's were pooled over all 63 runs. xLAM's were pooled over the handful of runs that produced any picks at all, since `enough picks` passed 1.7% of the time. Rendered as bare percentages those look like the same claim. With an interval and an n beside them they do not.
 
 **Whether a case fails the same way every time.** Pass several reports and per case results pool across every trial in every run, so a case that alternates is separated from one that never works. The second is a missing capability; the first is a jagged one, and it is the harder problem.
 
