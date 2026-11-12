@@ -23,8 +23,9 @@ Marquee is the movie friend I always wanted. It knows what I've loved on Letterb
 
 ```mermaid
 flowchart LR
-  subgraph Browser
+  subgraph Clients
     UI[React app]
+    Desktop[Claude Desktop]
   end
   subgraph Server["Express server (one Render service)"]
     API[REST routes]
@@ -32,19 +33,24 @@ flowchart LR
     Client[MCP client]
     MCP[Movie MCP server]
   end
-  Claude[(Claude API)]
   TMDB[(TMDB API)]
   LB[(Letterboxd RSS)]
-  Desktop[Claude Desktop]
+  Claude[(Claude API)]
+  Local[(Local model, via OpenAI-compatible adapter<br/>Ollama · llama.cpp · vLLM)]
+  Eval[Eval harness]
 
   UI -->|browse, Letterboxd, Blend| API --> TMDB
   UI -->|POST /api/concierge/stream, SSE| Agent
-  Agent <-->|messages + tools| Claude
   Agent --> Client <-->|MCP, in memory| MCP
+  Desktop <-->|MCP, stdio| MCP
   MCP --> TMDB
   MCP --> LB
-  Desktop <-->|MCP, stdio| MCP
+  Agent <-->|MessagesClient| Claude
+  Agent <-->|MessagesClient| Local
+  Eval -->|same agent, same tools| Agent
 ```
+
+The agent takes a `MessagesClient` rather than constructing a model client, so Claude and any OpenAI-compatible endpoint are the same shape to it. That seam is what lets the eval harness drive **the real agent and the real MCP tools** against any model instead of a stand-in. See [running the agent on another model](#running-the-agent-on-another-model).
 
 The repo has three packages:
 
