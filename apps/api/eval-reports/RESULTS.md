@@ -155,9 +155,13 @@ srv operator(): got exception: {"error":{"code":500,
 
 Note the trailing `]` with no opening bracket. xLAM emits an **array** of calls.
 The grammar expects a bare object, parses the object, and fails on the closing
-bracket. Of 63 agent turns, 59 returned 500. The 4 that did not were the off
-topic case, where the correct answer is prose and no tool call is produced, so
-the parser never engages.
+bracket.
+
+Of 63 agent turns, **59 returned 500**. The 4 that survived are the tell: three
+were the off topic case across all three trials, where the correct answer is
+prose, and the fourth was a case in one trial where the model also answered
+without attempting a tool call. Every turn that survived is a turn where no tool
+call was made. Every turn that attempted one died.
 
 This is a known llama.cpp problem rather than an xLAM one: the same error is
 open against Gemma 4, Qwen3.5 and gpt-oss, and a Docker Model Runner maintainer
